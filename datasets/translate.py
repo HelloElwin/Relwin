@@ -2,39 +2,76 @@ import numpy as np
 import pickle
 import os
 
-# os.system('rm train.txt test.txt')
-os.system('touch train.txt test.txt')
-
 prefix = './yelp/'
+datatype = 'raw'
 
-with open(prefix + 'trn_raw', 'rb') as fs:
-    A = pickle.load(fs).toarray()
-print('=== Loaded train data (=ﾟωﾟ)ﾉ')
+np.random.seed(19260817)
 
-with open('train.txt', 'w') as fs:
-    for user, data in enumerate(A):
-        print('Processing %d/%d' % (user, len(A)), end='\r')
-        cand = np.argwhere(data != 0).flatten()
-        raw = str(user)
-        for item in cand:
-            if data[item] == None: continue
-            raw += ' ' + str(item)
-        fs.write(raw + '\n')
+print('Loading (>﹏<)', end='\r')
+with open(prefix + 'trn_' + datatype, 'rb') as fs:
+    trn = pickle.load(fs).toarray()
 
-print('=== Finished translating train data \(≧▽≦)/')
+with open(prefix + 'tst_' + datatype, 'rb') as fs:
+    tst = pickle.load(fs)
 
+with open(prefix + 'test_time', 'rb') as fs:
+    tstTime = pickle.load(fs)
 
-with open(prefix + 'tst_raw', 'rb') as fs:
-    data = pickle.load(fs)
-print('=== Loaded test data (´▽｀)')
+print('=== Loaded data (=ﾟωﾟ)ﾉ')
 
-data = np.array(data)
-user = np.argwhere(data != None).flatten()
-item = data[user]
+def translate_for_lgcn():
+    with open('train.txt', 'w') as fs:
+        for user, data in enumerate(trn):
+            print('Processing %d/%d' % (user, len(trn)), end='\r')
+            cand = np.argwhere(data != 0).flatten()
+            raw = str(user)
+            for item in cand:
+                if data[item] == None: continue
+                raw += ' ' + str(item)
+            fs.write(raw + '\n')
+    data = np.array(tst)
+    user = np.argwhere(data != None).flatten()
+    item = data[user]
+    with open ('test.txt', 'w') as fs:
+        for i in range(len(user)):
+            fs.write(str(user[i]) + ' ' + str(item[i]) + '\n')
+            print('Processing %d/%d' % (i, len(user)), end='\r')
 
-with open ('test.txt', 'w') as fs:
-    for i in range(len(user)):
-        fs.write(str(user[i]) + ' ' + str(item[i]) + '\n')
-        print('Processing %d/%d' % (i, len(user)), end='\r')
+def translate_for_rechorus():
+    with open('train.csv', 'w') as fs:
+        fs.write('user_id\titem_id\ttime\n')
+        for user, data in enumerate(trn):
+            print(f'Processing train set {user}/{len(trn)}', end='\r')
+            cand = np.argwhere(data != 0).flatten()
+            for item in cand:
+                if data[item] == None: continue
+                fs.write(str(user+1) + '\t' + str(item+1) + '\t' + str(data[item]) + '\n')
+    with open('test.csv', 'w') as fs:
+        fs.write('user_id\titem_id\ttime\tneg_items\n')
+        users = np.argwhere(np.array(tst) != None).flatten()
+        items = np.array(tst)[users]
+        for user, item in zip(users, items):
+            print(f'Processing test set {user}/{len(trn)}', end='\r')
+            neg = np.argwhere(trn[user] == 0).flatten()
+            np.random.shuffle(neg)
+            while item in neg[:99]:
+                np.random.shuffle(neg)
+            neg = neg + 1
+            fs.write(str(user+1) + '\t' + str(item+1) + '\t' + str(tstTime[user]) + '\t' + str(neg.tolist()[:99]) + '\n')
 
-print('=== Finished translating test data (*≧ω≦)')
+def translate_for_sasrec():
+    with open('yelp.txt', 'w') as fs:
+        for user, data in enumerate(trn):
+            print(f'Processing train set {user}/{len(trn)}', end='\r')
+            cand = np.argwhere(data != 0).flatten().tolist()
+            cand = sorted(cand, key=lambda x: data[x])
+            for item in cand:
+                if data[item] == None: continue
+                fs.write(str(user+1) + ' ' + str(item+1) + '\n')
+
+if __name__ == '__main__':
+    x = input('[0] LightGCN\n[1] ReChorus\n[2] SASRec\nChoice: ')
+    if x == '0': translate_for_lgcn()
+    if x == '1': translate_for_rechorus()
+    if x == '2': translate_for_sasrec()
+    print('=== Finished translating \(≧▽≦)/')
