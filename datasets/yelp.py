@@ -10,7 +10,7 @@ import scipy.sparse as sp
 import time
 import copy
 
-np.random.seed(19260817)
+np.random.seed(19260817) # (=ﾟωﾟ)ﾉ
 
 time_len = []
 sequ_len = []
@@ -42,12 +42,15 @@ def mapping(infile):
             interaction[usr][itm] = time_stamp # 不考虑一个商品多次交互？
     return interaction, uId, iId
 
+# sparse for ours: 15, 10, 5
+# original dense: 30, 20, 15
+
 def checkFunc1(cnt):
-    return cnt >= 15 # changed from 30
+    return cnt >= 30 
 def checkFunc2(cnt):
-    return cnt >= 10 # changed from 20
+    return cnt >= 20 
 def checkFunc3(cnt):
-    return cnt >= 5 # changed from 15
+    return cnt >= 15 
 
 def filter(interaction, usrnum, itmnum, ucheckFunc, icheckFunc, filterItem=True):
     # get keep set
@@ -138,6 +141,52 @@ def division_by_interaction(trn, tst, usrnum, itmnum, l1, l2):
             ret_num[1] += 1
     return ret_trn, ret_tst, ret_num
 
+def augmentation_from_raw(trn, tst, usrnum, l1, l2):
+    rettrn = copy.deepcopy(trn)
+    rettst = copy.deepcopy(tst)
+    retusr = copy.deepcopy(usrnum)
+    for seq in range(1, 2):
+        for idx, data in enumerate(trn[seq]):
+            itmcnt = 0
+            if seq == 1: 
+                items = []
+                for itm in data:
+                    if data[itm] == None: continue
+                    items.append((itm, data[itm]))
+                items = sorted(items, key=lambda x: x[1])[:l1 - np.random.randint(5) - 1] # 加random
+                data = {}
+                for item, time in items:
+                    data[item] = time
+                rettrn[seq].append(copy.deepcopy(data))
+                rettst[seq].append(None)
+                retusr[seq] += 1
+            else:
+                if np.random.randn() > 0.2:
+                    items = []
+                    for itm in data:
+                        if data[itm] == None: continue
+                        items.append((itm, data[itm]))
+                    items = sorted(items, key=lambda x: x[1])[:l2 - np.random.randint(10)]
+                    data = {}
+                    for item, time in items:
+                        data[item] = time
+                    rettrn[seq].append(copy.deepcopy(data))
+                    rettst[seq].append(None)
+                    retusr[seq] += 1
+                elif np.random.randn() > -0.2:
+                    items = []
+                    for itm in data:
+                        if data[itm] == None: continue
+                        items.append((itm, data[itm]))
+                    items = sorted(items, key=lambda x: x[1])[:l1 - np.random.randint(5) - 1]
+                    data = {}
+                    for item, time in items:
+                        data[item] = time
+                    rettrn[seq].append(copy.deepcopy(data))
+                    rettst[seq].append(None)
+                    retusr[seq] += 1
+    return rettrn, rettst, retusr
+
 def augmentation(trnInt, usrnum, l1, l2):
     retint = []
     augcnt = [0, 0, 0]
@@ -206,6 +255,7 @@ def split(interaction, usrnum, itmnum):
 def split_div(interaction, usrnum, itmnum):
     testNum = 10000
     tstInt = list()
+    tstTime = []
 
     for seq in range(len(interaction)):
         pickNum = int(np.ceil(testNum * usrnum[seq] / np.sum(usrnum)))
@@ -213,6 +263,7 @@ def split_div(interaction, usrnum, itmnum):
         pickUsr = usrPerm[:pickNum]
 
         tstInt.append([None] * usrnum[seq])
+        tstTime.append([None] * usrnum[seq])
         exception = 0
         for usr in pickUsr:
             temp = list()
@@ -225,7 +276,13 @@ def split_div(interaction, usrnum, itmnum):
                 continue
             temp.sort(key=lambda x: x[1]) # 从小到大
             tstInt[seq][usr] = temp[-1][0]
+            tstTime[seq][usr] = interaction[seq][usr][tstInt[seq][usr]]
             interaction[seq][usr][tstInt[seq][usr]] = None
+
+    with open('./yelp/test_time', 'wb') as fs:
+        a = []
+        for i in tstTime: a = a + i
+        pickle.dump(a, fs)
 
     # print('Exception:', exception, 'Total test samples:', np.sum(np.array(tstInt)!=None))
 
@@ -305,6 +362,8 @@ if __name__ == '__main__':
         pickle.dump(tst_raw_div[0] + tst_raw_div[1] + tst_raw_div[2], fs)
     log('Saved 「trn_raw」「tst_raw」\(≧▽≦)/')
 
+    exit()
+
     with open(prefix + 'tst_raw_div', 'wb') as fs:
         pickle.dump(tst_raw_div, fs)
     for seq in range(3):
@@ -314,17 +373,19 @@ if __name__ == '__main__':
 
 
     ##### Starting The Augmentation #####
-    
-    
-    trn_aug, usrnum, aug_cnt = augmentation(trn_int, usrnum, l1, l2)
-    log('Dataset Augmented (short+%d, medium+%d, long+%d)' % (aug_cnt[0], aug_cnt[1], aug_cnt[2]))
 
     l1, l2 = 15, 35
-    trn_aug_div,  usrnum_div = division_by_interaction_without_test(trn_aug, usrnum, itmnum, l1, l2)
-    log('Divided Sequences for Augmented Data: Short:%d, Medium:%d, Long:%d' % (usrnum_div[0], usrnum_div[1], usrnum_div[2]))
+    trn_aug_div, tst_aug_div, usrnum_div = augmentation_from_raw(trn_raw_div, tst_raw_div, usrnum_div, l1, l2)
+    
+    # trn_aug, usrnum, aug_cnt = augmentation(trn_int, usrnum, l1, l2)
+    # log('Dataset Augmented (short+%d, medium+%d, long+%d)' % (aug_cnt[0], aug_cnt[1], aug_cnt[2]))
 
-    trn_aug_div, tst_aug_div = split_div(trn_aug_div, usrnum_div, itmnum)
-    log('Augmented Data Splited')
+    # l1, l2 = 15, 35
+    # trn_aug_div,  usrnum_div = division_by_interaction_without_test(trn_aug, usrnum, itmnum, l1, l2)
+    # log('Divided Sequences for Augmented Data: Short:%d, Medium:%d, Long:%d' % (usrnum_div[0], usrnum_div[1], usrnum_div[2]))
+
+    # trn_aug_div, tst_aug_div = split_div(trn_aug_div, usrnum_div, itmnum)
+    # log('Augmented Data Splited')
 
     trn_aug = []
     for i in range(3):
@@ -344,4 +405,5 @@ if __name__ == '__main__':
 
 
     # np.save(prefix + 'statistics.npy', np.array([time_len, sequ_len]))
+
     # log('Saved Statistical Data')
