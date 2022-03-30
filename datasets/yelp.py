@@ -1,3 +1,4 @@
+# encoding=utf-8
 ########################
 # adapted from: akaxlh #
 ########################
@@ -46,11 +47,11 @@ def mapping(infile):
 # original dense: 30, 20, 15
 
 def checkFunc1(cnt):
-    return cnt >= 30 
+    return cnt >= 15
 def checkFunc2(cnt):
-    return cnt >= 20 
+    return cnt >= 10 
 def checkFunc3(cnt):
-    return cnt >= 15 
+    return cnt >= 5
 
 def filter(interaction, usrnum, itmnum, ucheckFunc, icheckFunc, filterItem=True):
     # get keep set
@@ -271,7 +272,7 @@ def split_div(interaction, usrnum, itmnum):
             for itm in data:
                 if data[itm] == None: continue
                 temp.append((itm, data[itm]))
-            if len(temp) <= 2: # 之前是等于0，那不太行啊
+            if len(temp) <= 2:
                 exception += 1
                 continue
             temp.sort(key=lambda x: x[1]) # 从小到大
@@ -283,6 +284,7 @@ def split_div(interaction, usrnum, itmnum):
         a = []
         for i in tstTime: a = a + i
         pickle.dump(a, fs)
+    log('Saved 「test_time」\(≧▽≦)/')
 
     # print('Exception:', exception, 'Total test samples:', np.sum(np.array(tstInt)!=None))
 
@@ -329,22 +331,22 @@ if __name__ == '__main__':
     log('Start! (=ﾟωﾟ)ﾉ')
 
     # Load data from yelp_review
-    # trn_int, usrnum, itmnum = mapping(prefix + 'yelp_review')
-    # log('Id Mapped, usr %d, itm %d' % (usrnum, itmnum))
+    trn_int, usrnum, itmnum = mapping(prefix + 'yelp_review')
+    log('Id Mapped, usr %d, itm %d' % (usrnum, itmnum))
 
-    # checkFuncs = [checkFunc1, checkFunc2, checkFunc3]
-    # for i in range(3):
-    #     filterItem = True if i < 2 else False
-    #     trn_int, usrnum, itmnum = filter(trn_int, usrnum, itmnum, checkFuncs[i], checkFuncs[i], filterItem)
-    #     print('Filter', i, 'times:', usrnum, itmnum)
-    # log('Sparse Samples Filtered, User:%d, Item:%d' % (usrnum, itmnum))
+    checkFuncs = [checkFunc1, checkFunc2, checkFunc3]
+    for i in range(3):
+        filterItem = True if i < 2 else False
+        trn_int, usrnum, itmnum = filter(trn_int, usrnum, itmnum, checkFuncs[i], checkFuncs[i], filterItem)
+        print('Filter', i, 'times:', usrnum, itmnum)
+    log('Sparse Samples Filtered, User:%d, Item:%d' % (usrnum, itmnum))
 
-    # with open(prefix + 'trn_int', 'wb') as fs:
-    #     pickle.dump(dict_to_sparse(trn_int, usrnum, itmnum), fs)
-    # log('Saved 「trn_int」\(≧▽≦)/')
+    with open(prefix + 'trn_int', 'wb') as fs:
+        pickle.dump(dict_to_sparse(trn_int, usrnum, itmnum), fs)
+    log('Saved 「trn_int」\(≧▽≦)/')
 
-    trn_int, usrnum, itmnum = load_from_int(prefix + 'trn_int')
-    log('Loaded Data from trn_int')
+    # trn_int, usrnum, itmnum = load_from_int(prefix + 'trn_int')
+    # log('Loaded Data from trn_int')
 
     l1, l2 = 15, 35
     trn_raw_div,  usrnum_div = division_by_interaction_without_test(trn_int, usrnum, itmnum, l1, l2)
@@ -362,15 +364,12 @@ if __name__ == '__main__':
         pickle.dump(tst_raw_div[0] + tst_raw_div[1] + tst_raw_div[2], fs)
     log('Saved 「trn_raw」「tst_raw」\(≧▽≦)/')
 
-    exit()
-
     with open(prefix + 'tst_raw_div', 'wb') as fs:
         pickle.dump(tst_raw_div, fs)
     for seq in range(3):
         with open(prefix + 'trn_raw_' + seqName[seq], 'wb') as fs:
             pickle.dump(dict_to_sparse(trn_raw_div[seq], usrnum_div[seq], itmnum), fs)
     log('Saved 「trn_raw_short」「trn_raw_medium」「trn_raw_long」\(≧▽≦)/')
-
 
     ##### Starting The Augmentation #####
 
