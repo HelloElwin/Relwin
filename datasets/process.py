@@ -280,7 +280,7 @@ def split_div(interaction, usrnum, itmnum):
             tstTime[seq][usr] = interaction[seq][usr][tstInt[seq][usr]]
             interaction[seq][usr][tstInt[seq][usr]] = None
 
-    with open('./yelp/test_time', 'wb') as fs:
+    with open(prefix + 'test_time', 'wb') as fs:
         a = []
         for i in tstTime: a = a + i
         pickle.dump(a, fs)
@@ -323,14 +323,7 @@ def load_from_int(path):
     trn_int, usrnum, itmnum = sparse_to_dict(trn_int)
     return trn_int, usrnum, itmnum
             
-
-if __name__ == '__main__':
-
-    seqName = ['short', 'medium', 'long']
-    prefix = './yelp/'
-    log('Start! (=ﾟωﾟ)ﾉ')
-
-    # Load data from yelp_review
+def load_from_yelp_raw(prefix):
     trn_int, usrnum, itmnum = mapping(prefix + 'yelp_review')
     log('Id Mapped, usr %d, itm %d' % (usrnum, itmnum))
 
@@ -345,10 +338,28 @@ if __name__ == '__main__':
         pickle.dump(dict_to_sparse(trn_int, usrnum, itmnum), fs)
     log('Saved 「trn_int」\(≧▽≦)/')
 
-    # trn_int, usrnum, itmnum = load_from_int(prefix + 'trn_int')
-    # log('Loaded Data from trn_int')
+    return trn_int, usrnum, itmnum
+
+if __name__ == '__main__':
 
     l1, l2 = 15, 35
+    dataset = input('Choose a dataset: ')
+    load_from_raw = False
+    prefix = './' + dataset + '/'
+    seqName = ['short', 'medium', 'long']
+    if dataset == 'yelp': l1, l2 = 15, 35
+    if dataset == 'gowalla': l1, l2 = 10, 30
+    log(f'Start! (=ﾟωﾟ)ﾉ dataset={prefix} l1={l1} l2={l2}')
+
+    if load_from_raw:
+        log('Loading from raw data')
+        if dataset == 'yelp':
+            trn_int, usrnum, itmnum = load_from_yelp_raw(prefix)
+        log('Loaded ' + dataset + ' raw data')
+
+    trn_int, usrnum, itmnum = load_from_int(prefix + 'trn_int')
+    log('Loaded Data from trn_int')
+
     trn_raw_div,  usrnum_div = division_by_interaction_without_test(trn_int, usrnum, itmnum, l1, l2)
     log('Divided Sequences for Raw Data: Short:%d, Medium:%d, Long:%d' % (usrnum_div[0], usrnum_div[1], usrnum_div[2]))
 
@@ -373,7 +384,6 @@ if __name__ == '__main__':
 
     ##### Starting The Augmentation #####
 
-    l1, l2 = 15, 35
     trn_aug_div, tst_aug_div, usrnum_div = augmentation_from_raw(trn_raw_div, tst_raw_div, usrnum_div, l1, l2)
     
     # trn_aug, usrnum, aug_cnt = augmentation(trn_int, usrnum, l1, l2)
@@ -403,6 +413,6 @@ if __name__ == '__main__':
     log('Saved 「trn_aug_short」「trn_aug_medium」「trn_aug_long」\(≧▽≦)/')
 
 
-    # np.save(prefix + 'statistics.npy', np.array([time_len, sequ_len]))
+    np.save(prefix + 'statistics.npy', np.array([time_len, sequ_len]))
 
-    # log('Saved Statistical Data')
+    log('Saved Statistical Data')

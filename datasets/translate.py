@@ -4,7 +4,8 @@ import numpy as np
 import pickle
 import os
 
-prefix = './yelp/'
+dataset = input("Choose a dataset: ")
+prefix = './' + dataset + '/'
 tarfix = './variants/'
 datatype = 'raw'
 
@@ -120,11 +121,11 @@ def translate_for_bert4rec():
             cand = sorted(cand, key=lambda x: data[x])
             cand = (np.array(cand) + 1).tolist()
             seq.append(cand)
-        pickle.dump(seq, fs)
+        pickle.dump(seq, fs, protocol=2)
     with open(tarfix + 'tst', 'wb') as fs:
         tst = np.array(tst)
         tst[np.argwhere(tst!=None)] += 1
-        pickle.dump(tst.tolist(), fs)
+        pickle.dump(tst.tolist(), fs, protocol=2)
     max_item_id = 0
     for data in seq:
         max_item_id = max(max_item_id, np.max(data))
