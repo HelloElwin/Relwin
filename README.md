@@ -1,8 +1,13 @@
-# Relwin
+> ***Under development, please be careful using anything from this repo \~***
+
+# Relwin!
 
 Some models for <ins>**R**</ins>ecommender System written by <ins>**elwin**</ins>.
 
-> ***Under development, please be careful using anything from this repo \~***
+## Environment
+
+- Python 3.6
+- TensorFlow 1.15
 
 ## Models
 
