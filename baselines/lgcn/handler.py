@@ -1,3 +1,6 @@
+########################
+# adapted from: akaxlh #
+########################
 import pickle
 import numpy as np
 from scipy.sparse import csr_matrix
@@ -52,17 +55,23 @@ class DataHandler:
     def load_data(self):
 
         # train data
-        with open(self.prefix + 'trn_aug', 'rb') as fs:
+        with open(self.prefix + 'trn_raw', 'rb') as fs:
             self.trnMat = pickle.load(fs).astype(np.float32)
 
         # test data
-        with open(self.prefix + 'tst_aug', 'rb') as fs:
+        with open(self.prefix + 'tst_raw', 'rb') as fs:
             self.tstInt = np.array(pickle.load(fs))
         self.tstUsrs = np.argwhere(self.tstInt != None).flatten()
 
         #finished
         args.user, args.item = self.trnMat.shape
         log('Loaded User: %d Item: %d' % (args.user, args.item))
+
+        self.calculate_item_pop()
+
+    def calculate_item_pop(self):
+        self.item_pop = np.array(self.trnMat.sum(axis=0)).flatten()
+        self.item_pop = self.item_pop / sum(self.item_pop)
 
     def prepareGlobalData(self):
         adj = 0

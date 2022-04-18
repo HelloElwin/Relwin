@@ -67,6 +67,12 @@ class DataHandler:
         args.user, args.item = self.trnMat.shape
         log('Loaded User: %d Item: %d' % (args.user, args.item))
 
+        self.calculate_item_pop()
+
+    def calculate_item_pop(self):
+        self.item_pop = np.array(self.trnMat.sum(axis=0)).flatten()
+        self.item_pop = self.item_pop / sum(self.item_pop)
+
     def prepareGlobalData(self):
         adj = 0
         for i in range(args.seqNum):

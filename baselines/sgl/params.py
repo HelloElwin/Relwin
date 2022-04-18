@@ -5,13 +5,14 @@ def parse_args():
     parser.add_argument('--lr', default=1e-3, type=float, help='learning rate')
     parser.add_argument('--batch', default=256, type=int, help='batch size')
     parser.add_argument('--reg', default=1e-6, type=float, help='weight decay regularizer')
-    parser.add_argument('--epoch', default=100, type=int, help='number of epochs')
+    parser.add_argument('--epoch', default=150, type=int, help='number of epochs')
     parser.add_argument('--decay', default=0.96, type=float, help='weight decay rate')
     parser.add_argument('--tstEpoch', default=3, type=int, help='number of epoch to test while training')
     parser.add_argument('--latdim', default=64, type=int, help='embedding size')
     parser.add_argument('--sampNum', default=40, type=int, help='batch size for sampling')
     parser.add_argument('--gnn_layer', default=3, type=int, help='number of gnn layers')
     parser.add_argument('--trnNum', default=10000, type=int, help='number of training instances per epoch')
+    parser.add_argument('--save_path', default='tmp', type=str, help='save to what')
     parser.add_argument('--load_model', default=None, help='model name to load')
     parser.add_argument('--shoot', default=10, type=int, help='K of top k')
     parser.add_argument('--data', default='yelp', type=str, help='name of dataset')
@@ -22,12 +23,15 @@ def parse_args():
     parser.add_argument('--graphSampleN', default=15000, type=int, help='use 25000 for training and 200000 for testing, empirically')
     parser.add_argument('--divSize', default=10000, type=int, help='div size for smallTestEpoch')
 
-    parser.add_argument('--ssl_keep_rate', default=0.1, type=float, help='drop out keep rate')
+    parser.add_argument('--ssl_keep_rate', default=0.4, type=float, help='drop out keep rate')
     parser.add_argument('--ssl_temp', default=0.2, type=float, help='InfoNCE temperature')
     parser.add_argument('--ssl_reg', default=1e-6, type=float, help='ssl regularization')
 
+    parser.add_argument('--pop_neg', default=False, type=bool, help='sample by popularity')
+
     return parser.parse_args()
 
+# Yelp
 # | reg  | ssl_keep_rate | ssl_temp | ssl_reg | HR/NDCG       |
 # | ---- | ------------- | -------- | ------- | ------------- |
 # | 1e-6 | 0.4           | 0.5      | 1e-8    | 0.7361/0.4511 |

@@ -1,4 +1,5 @@
 import os
+import sys
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import numpy as np
 from params import args
@@ -61,9 +62,11 @@ class Recommender:
             if test:
                 reses = self.test()
                 log(self.makePrint('Test', ep, reses, test))
-
+                self.saveHistory()
+        self.saveHistory()
         reses = self.test()
         log(self.makePrint('Test', args.epoch, reses, True))
+        sys.stdout.flush()
 
     def prepare_model(self):
         self.actFunc = 'leakyRelu'
@@ -206,11 +209,27 @@ class Recommender:
             if len(batch_seqs[i]) < args.num_his:
                 padding = args.num_his - len(batch_seqs[i])
                 cut_seq = [0] * padding + batch_seqs[i]
-                neg_seq = np.random.permutation(np.argwhere(batch_rows[i]==0).flatten())[:99].tolist() + [batch_test[i]]
-                # print('=====', batch_seqs[i][-1], batch_test[i])
+                # neg_seq = np.random.permutation(np.argwhere(batch_rows[i]==0).flatten())[:99].tolist() + [batch_test[i]]
             else:
                 cut_seq = batch_seqs[i][-args.num_his:]
-                neg_seq = np.random.permutation(np.argwhere(batch_rows[i]==0).flatten())[:99].tolist() + [batch_test[i]] 
+                # neg_seq = np.random.permutation(np.argwhere(batch_rows[i]==0).flatten())[:99].tolist() + [batch_test[i]] 
+
+            if args.pop_neg:
+                negset = []
+                item_pop = self.handler.item_pop[np.argwhere(batch_rows[i]==0).flatten()]
+                candidates = np.argwhere(batch_rows[i]==0).flatten()
+                item_pop /= sum(item_pop)
+                while len(negset) < 99:
+                    attempt = np.random.choice(candidates, 99, replace=False, p=item_pop)
+                    for item in attempt:
+                        if item not in negset:
+                            negset.append(item)
+                negset = np.array(negset[:99])
+            else:
+                candidates = np.reshape(np.argwhere(batch_rows[i]==0), [-1])
+                negset = np.random.permutation(candidates)[:99]
+
+            neg_seq = negset.tolist() + [batch_test[i]]
 
             seq += cut_seq
             neg += neg_seq

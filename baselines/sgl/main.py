@@ -57,9 +57,11 @@ class Recommender:
             if test:
                 reses = self.testEpoch()
                 log(self.makePrint('Test', ep, reses, test))
-
+                self.saveHistory()
+        
         reses = self.testEpoch()
         log(self.makePrint('Test', args.epoch, reses, True))
+        self.saveHistory()
 
     def predict(self):
         uids = self.uids
@@ -266,9 +268,21 @@ class Recommender:
         cur = 0
         for i in range(batch):
             posloc = temTst[i]
-            negset = np.reshape(np.argwhere(temLabel[i]==0), [-1])
-            rdnNegSet = np.random.permutation(negset)[:99]
-            locset = np.concatenate((rdnNegSet, np.array([posloc])))
+            if args.pop_neg: 
+                negset = []
+                item_pop = self.handler.item_pop[np.argwhere(temLabel[i]==0).flatten()]
+                candidates = np.argwhere(temLabel[i]==0).flatten()
+                item_pop /= sum(item_pop)
+                while len(negset) < 99:
+                    attempt = np.random.choice(candidates, 99, replace=False, p=item_pop)
+                    for item in attempt:
+                        if item not in negset:
+                            negset.append(item)
+                negset = np.array(negset[:99])
+            else:
+                candidates = np.reshape(np.argwhere(temLabel[i]==0), [-1])
+                negset = np.random.permutation(candidates)[:99]
+            locset = np.concatenate((negset, np.array([posloc])))
             tstLocs[i] = locset
             for j in range(100):
                 uLocs[cur] = batIds[i]
